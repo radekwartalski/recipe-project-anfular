@@ -4,37 +4,80 @@ import { Subject } from 'rxjs/Subject';
 import { Recipe } from './recipe.model';
 import { Ingredient } from '../shared/ingredient.model';
 import { ShoppingListService } from '../shopping-list/shopping-list.service';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { map, tap, take, exhaustMap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class RecipeService {
   recipesChanged = new Subject<Recipe[]>();
+  apiURL = 'https://angular-recipe-book-5b43d.firebaseio.com/recipes.json';
 
-  private recipes: Recipe[] = [
-    new Recipe(
-      'Tasty Schnitzel',
-      'A super-tasty Schnitzel - just awesome!',
-      'https://upload.wikimedia.org/wikipedia/commons/7/72/Schnitzel.JPG',
-      [
-        new Ingredient('Meat', 1),
-        new Ingredient('French Fries', 20)
-      ]),
-    new Recipe('Big Fat Burger',
-      'What else you need to say?',
-      'https://upload.wikimedia.org/wikipedia/commons/b/be/Burger_King_Angus_Bacon_%26_Cheese_Steak_Burger.jpg',
-      [
-        new Ingredient('Buns', 2),
-        new Ingredient('Meat', 1)
-      ])
-  ];
+  httpOptions = {
+    headers: new HttpHeaders({
+      'Content-Type': 'application/json'
+    })
+  };
 
-  constructor(private slService: ShoppingListService) {}
+  private recipes: Recipe[] = [];
+
+  constructor(private slService: ShoppingListService, private http: HttpClient, private authService: AuthService) {}
+
+  storeRecipes() {
+    console.log(this.recipes);
+    return this.http
+    .put(this.apiURL, this.recipes)
+    .subscribe(x => console.log(x));
+  }
+
+  fetchRecipes() {
+// 'take()' wezmie tylko jedno value z tego observabla i pozniej sie odsubskrybuje.
+// exhaustMap czeka az skonczymy subskrypcje (czyli jak dostaniemy 1 usera)
+    return this.authService.user.pipe(
+      take(1),
+      exhaustMap(user => {
+      return this.http.get<Recipe[]>(
+        this.apiURL,
+        {
+          params: new HttpParams().set('auth', user.token)
+        }
+        );
+    }),
+    map(recipes => {
+      return recipes.map(recipe => {
+        return {
+          ...recipe,
+          ingredients: recipe.ingredients ? recipe.ingredients : []
+        };
+      });
+    }),
+    tap(recipes => {
+      this.recipesChanged.next(recipes.slice());
+    })
+  );
+  }
 
   getRecipes() {
     return this.recipes.slice();
   }
 
   getRecipe(index: number) {
+    console.log(this.recipes)
     return this.recipes[index];
+  }
+
+  getRecipesFromServer(): Observable<Recipe[]> {
+    return this.authService.user.pipe(
+      take(1),
+      exhaustMap(user => {
+      return this.http.get<Recipe[]>(
+        this.apiURL,
+        {
+          params: new HttpParams().set('auth', user.token)
+        }
+        );
+    }));
   }
 
   addIngredientsToShoppingList(ingredients: Ingredient[]) {

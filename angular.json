@@ -25,11 +25,11 @@
             ],
             "styles": [
               "src/styles.css",
-              "C:/my-projects/maxAngular/recipe-project/node_modules/bootstrap/dist/css/bootstrap.min.css"
+              "node_modules/bootstrap/dist/css/bootstrap.min.css"
             ],
             "scripts": [
-              "C:/my-projects/maxAngular/recipe-project/node_modules/jquery/dist/jquery.min.js",
-              "C:/my-projects/maxAngular/recipe-project/node_modules/bootstrap/dist/js/bootstrap.min.js"
+              "node_modules/jquery/dist/jquery.min.js",
+              "node_modules/bootstrap/dist/js/bootstrap.min.js"
             ]
           },
           "configurations": {
